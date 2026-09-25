@@ -1,12 +1,20 @@
-cmake_minimum_required(VERSION 3.16)
-project(trattoria C)
+cmake_minimum_required(VERSION 3.20)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+project(SHA256 VERSION 1.0)
 
-include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/include)
+set(CMAKE_MACOSX_RPATH 1)
+set(BUILD_SHARED_LIBS ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-add_executable(trattoria_client src/trattoria_client.c)
+add_compile_options(-Wno-deprecated-declarations)
 
-target_link_libraries(trattoria_client PRIVATE pthread)
+find_package(OpenSSL REQUIRED)
 
+include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/include ${OPENSSL_INCLUDE_DIR})
+
+add_executable(MainServer_sha256 src/MainServer_sha256.c
+    src/Utils.h)
+target_link_libraries(MainServer_sha256 ${OPENSSL_LIBRARIES})
+
+#add_executable(MainClient_sha256.c src/MainClient_sha256.c)
+#target_link_libraries(MainClient_sha256 ${OPENSSL_LIBRARIES})
