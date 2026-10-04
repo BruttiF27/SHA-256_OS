@@ -1,37 +1,60 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <openssl/sha.h>
+# include "MainServer_sha256.h"
 
-#include "Utils.h"
-
+/**
+ * Must be run first in order for the software to work properly
+ * 1. Creates shared memory segment and waits for requests, sent through message queues
+ * 2. Upon receiving a message, reads the requested block where the client wrote file data
+ * 3. Data is then converted
+ * 4. Writes converted data on a usable block in its half of the memory
+ * 5. Sends message to client that the data can be fetched from shared memory
+ */
 int main (int argc, char *argv[]) {
 
-    struct MessageHeader m;
-
-    m.mtype = 1;
-
-    printf("I am the server - %d\n", m.mtype);
-
-
-
+    // TODO Remove once client is able to send messages to server
     if (argc < 2) {
         printf("Usage: %s <string with no spaces>\n", argv[0]);
         exit(1);
     }
 
-    SHA256_CTX ctx;
-    SHA256_Init(&ctx);
+    // TODO Step 1
+    int shmid;
+    if (initialize(&shmid) == -1) exit(1);
+    
 
-    SHA256_Update(&ctx, argv[1], strlen(argv[1]));
+    // TODO Step 2
 
-    unsigned char hash[32];
-    SHA256_Final(hash, &ctx);
 
-    char char_hash[65];
-    for(int i = 0; i < 32; i++) sprintf(char_hash + (i * 2), "%02x", hash[i]);
+    // TODO Step 3
+    char* rawString = argv[1];
+    char digestedString[65];
+    
+    if(digestContent(digestedString, rawString)) printf("Something's wrong\n");
 
-    printf("%s\n", char_hash);
+    sleep(10); // TODO Remove this once you get the server active until a signal is sent
 
+    // TODO Step 4
+
+    // TODO Step 5
+    printf("%s\n", digestedString);
+
+    if (terminate(shmid) == -1) exit(1);
+
+    return 0;
+}
+
+int initialize (int* shmid) {
+    *shmid = createSharedMemory();
+    if (*shmid == -1) {
+        printf("Shared memory could not be created\n");
+        return -1;
+    }
+    return 0;
+}
+
+int terminate (int shmid) {
+    if (closeSharedMemory(shmid)) {
+        printf("Shared memory could not be closed\n");
+        return -1;
+    }
     return 0;
 }
