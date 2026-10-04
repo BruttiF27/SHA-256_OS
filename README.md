@@ -20,7 +20,6 @@ Per il voto massimo:
 - Usare almeno un semaforo per sincronizzare il flusso di comunicazione e/o processamento.
 
 # Roadmap
-- Corretta strutturazione del progetto mediante CMAKE
 - Creazione del server
 - Creazione del client
 - Verifica end-to-end delle entità
