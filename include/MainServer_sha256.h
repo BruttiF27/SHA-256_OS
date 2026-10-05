@@ -5,6 +5,7 @@
 # include <string.h>
 # include <stdlib.h>
 # include <unistd.h>
+# include <signal.h>
 # include <sys/shm.h>
 # include <openssl/sha.h>
 
@@ -13,7 +14,13 @@
 # include "FileHandler.h"
 # include "Utils.h"
 
-int initialize (int*);
-int terminate (int);
+__sig_atomic_t termination_flag = 0;
+
+int initializeSharedMemory (int*);
+int initializeMessageQueues (int*, int*);
+void terminateSharedMemory (int);
+void terminateMessageQueues (int, int);
+MessageHeader createMessage (long);
+void sigintHandler (int);
 
 # endif

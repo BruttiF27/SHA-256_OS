@@ -13,7 +13,9 @@
 # include "Utils.h"
 
 int usageCheck (int);
-int initialize (int*, int**);
-int terminate (int*);
+int connectToSharedMemory (int*, int**);
+int findMessageQueues (int*, int*);
+int disconnectFromSharedMemory (int*);
+MessageHeader createMessage ();
 
 # endif

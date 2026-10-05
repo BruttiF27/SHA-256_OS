@@ -6,8 +6,12 @@
 # define MEMORY_CLIENT_SECTION MEMORY_SIZE - BLOCK_SIZE
 # define MEMORY_SERVER_SECTION BLOCK_SIZE
 
+# define KEY_SHARED_MEMORY 27
+# define KEY_REQUEST_QUEUE 28
+# define KEY_RETURN_QUEUE 29
+
 typedef struct MessageHeader {
-    long mtype;                 // Contains message type, identifies client/server messages (value must be mtype > 0)
+    long mtype;                 // Identifies client/server messages (value must be mtype > 0)
     unsigned int block_id;      // Keeps block id inside shared memory or block slot inside the result section (15th)
     unsigned int block_index;   // Keeps block index for specific request's data (default=0)
     unsigned int block_total;   // Keeps total blocks required for specific request's data (default=1)
