@@ -9,9 +9,9 @@ Lo scopo dell'impronta è la visualizzazione sintetica di contenuti informativi 
 
 # Requisiti
 Minimo necessario:
-- Implementare server che riceve richieste e invia risposte, usando code di messaggi.
-- Implementare client che invia richiesta e riceve risposta, usando code di messaggi.
-- Trasferire il file da client a server attraverso memoria condivisa.
+- OK Implementare server che riceve richieste e invia risposte, usando code di messaggi.
+- OK Implementare client che invia richiesta e riceve risposta, usando code di messaggi.
+- OK Trasferire il file da client a server attraverso memoria condivisa.
 
 Per il voto massimo:
 - Istanziare processi distinti per elaborare richieste multiple concorrenti.
@@ -20,9 +20,5 @@ Per il voto massimo:
 - Usare almeno un semaforo per sincronizzare il flusso di comunicazione e/o processamento.
 
 # Roadmap
-- Creazione del server
-- Creazione del client
-- Verifica end-to-end delle entità
-- Implementazione della memoria condivisa
 - Implementazione di semafori per il controllo sui blocchi della memoria condivisa
 - Gestione di richieste concorrenti
