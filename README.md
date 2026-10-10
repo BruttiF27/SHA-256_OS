@@ -20,5 +20,7 @@ Per il voto massimo:
 - Usare almeno un semaforo per sincronizzare il flusso di comunicazione e/o processamento.
 
 # Roadmap
-- Implementazione di semafori per il controllo sui blocchi della memoria condivisa
-- Gestione di richieste concorrenti
+- Implementazione di semafori per il controllo sui blocchi della memoria condivisa e dunque garantire protezione.
+- Gestione di multiple richieste concorrenti istanziando più processi dal server
+- Implementazione di un modo per limitare il numero di processi del server in esecuzione
+- Scheduling delle richieste in base alla dimensione dei file
