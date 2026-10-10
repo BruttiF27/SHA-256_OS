@@ -6,15 +6,14 @@
  * @param string char* to convert
  * @return Result of the procedure (0=ok, 1=error)
  */
-int digestContent (char* digest, char* string) {
+int digestContent (char* digest, char* string, size_t size) {
     SHA256_CTX ctx;
+    
     SHA256_Init(&ctx);
-
-    SHA256_Update(&ctx, string, strlen(string));
+    SHA256_Update(&ctx, string, size);
 
     unsigned char hash[32];
     SHA256_Final(hash, &ctx);
-
     for(int i = 0; i < 32; i++) sprintf(digest + (i * 2), "%02x", hash[i]);
     
     return 0;

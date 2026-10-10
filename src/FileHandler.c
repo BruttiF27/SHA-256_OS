@@ -1,23 +1,24 @@
 # include "FileHandler.h"
 
 /**
- * Reads data from a specific block inside shared memory
- * @param block_id Block where data is read
- * @return Read data
+ * Returns the contents read from a file
+ * @param fileName Path to the requested file
+ * @param buffer Contains the content that is to be read.
+ * @return File size
  */
-char* readMemory (unsigned int block_id) {
-
-    printf("Reading from block %d\n", block_id);
+ssize_t readChunk (int fileDescriptor, unsigned char* buffer, int blockCapacity) {
     
-    // char buffer[BLOCK_SIZE];
-    
-    return NULL;
-}
+    size_t fileSize = 0;
+    ssize_t bytesRead;
 
-/**
- * Writes data into a usable block inside shared memory
- */
-int writeMemory () {
-    printf ("Funzione scrittura collegata\n");
-    return 0;
+    while (fileSize < blockCapacity && (bytesRead = read(fileDescriptor, buffer+fileSize, blockCapacity-fileSize)) > 0) {
+        fileSize += bytesRead;
+    }
+
+    if (bytesRead == -1) {
+        printf("Read function failed\n");
+        return -1;
+    }
+
+    return fileSize;
 }

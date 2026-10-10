@@ -5,17 +5,17 @@
 # include <string.h>
 # include <stdlib.h>
 # include <sys/shm.h>
-# include <openssl/sha.h>
+# include <sys/stat.h>
 
 # include "Converter_sha256.h"
-# include "CommunicationHandler.h"
+# include "SharedMemoryUtils.h"
+# include "MessageQueueUtils.h"
 # include "FileHandler.h"
-# include "Utils.h"
 
 int usageCheck (int);
-int connectToSharedMemory (int*, int**);
-int findMessageQueues (int*, int*);
-int disconnectFromSharedMemory (int*);
-MessageHeader createMessage ();
+int connectSharedMemory (SharedMemoryContext*);
+int connectMessageQueues (MessageQueueContext*);
+void disconnectSharedMemory (SharedMemoryContext*);
+MessageHeader createMessage (unsigned int, size_t, unsigned int, unsigned int);
 
 # endif

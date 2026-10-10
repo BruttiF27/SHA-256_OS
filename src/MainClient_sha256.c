@@ -11,27 +11,85 @@
 int main (int argc, char *argv[]) {
     if (usageCheck(argc) == -1) exit(1);
 
-    int shmid, msqid_req, msqid_ret;
-    int* shmaddr;
+    // Initiate step 1
+    SharedMemoryContext shmctx = {-1, NULL};
+    if (connectSharedMemory(&shmctx) == -1) exit(1);
+    MessageQueueContext msqctx = {-1, -1};
+    if (connectMessageQueues(&msqctx) == -1) {
+        disconnectSharedMemory(&shmctx);
+        exit(1);
+    }
 
-    if (connectToSharedMemory(&shmid, &shmaddr) == -1 || findMessageQueues(&msqid_req, &msqid_ret) == -1) exit(1);
+    int fileDescriptor = open(argv[1], O_RDONLY, 0);
+    struct stat stats;
+    if (fileDescriptor < 0 || fstat(fileDescriptor, &stats) != 0) {
+        printf("File could not be opened or stats could not be fetched\n");
+        disconnectSharedMemory(&shmctx);
+        close(fileDescriptor);
+        exit(1);
+    }
+    
+    int requiredBlocks = ((size_t)stats.st_size + BLOCK_SIZE-1) / BLOCK_SIZE;
+    if (requiredBlocks == 0 || requiredBlocks > 15) {
+        printf("Empty file received or file too big\n");
+        disconnectSharedMemory(&shmctx);
+        close(fileDescriptor);
+        exit(1);
+    }
 
+    MessageHeader message;
+    unsigned char fileBuffer[BLOCK_SIZE];
+    for (int block_index = 0; block_index < requiredBlocks; block_index++) {
+        // Initiate step 2
+        ssize_t fileSize = readChunk(fileDescriptor, fileBuffer, BLOCK_SIZE);
+        if (fileSize == -1) {
+            printf("Provided file could not be read\n");
+            disconnectSharedMemory(&shmctx);
+            close(fileDescriptor);
+            exit(1);
+        }
 
-    // TODO Step 2
+        int block_id = writeRequestSharedMemory(shmctx.sharedMemory, fileBuffer, fileSize);
+        if (block_id == -1) {
+            printf("No blocks currently available\n");
+            disconnectSharedMemory(&shmctx);
+            close(fileDescriptor);
+            exit(1);
+        }
+        
+        // Initiate step 3
+        message = createMessage(block_id, fileSize, block_index, requiredBlocks);
+        if (sendMessage(msqctx.msqid_req, &message, getMessageSize(&message)) == -1) {
+            printf("Message could not be sent\n");
+            disconnectSharedMemory(&shmctx);
+            close(fileDescriptor);
+            exit(1);
+        } else printf("Message sent by the client. Mtype: %ld\n", message.mtype);
+    }
 
-    // TODO Step 3
-    MessageHeader message = createMessage();
-    if (sendMessage(msqid_req, &message, getMessageSize(&message)) == -1) printf("Message could not be sent\n");
-    else printf("Message sent by the client. Queue ID: %d, mtype: %d\n", msqid_req, message.mtype);
+    close(fileDescriptor);
 
-    // TODO Step 4
-    if (receiveMessage(msqid_ret, &message, getMessageSize(&message), 0) == -1) printf("Message could not be received\n");
-    else printf("Message received by the client. Queue ID: %d, mtype: %d\n", msqid_ret, message.mtype);
+    // Initiate step 4
+    if (receiveMessage(msqctx.msqid_ret, &message, getMessageSize(&message), getpid()) == -1) {
+        printf("Message could not be received\n");
+        disconnectSharedMemory(&shmctx);
+        exit(1);
+    } else printf("Message received by the client. Mtype: %ld\n", message.mtype);
 
-    // TODO Step 5
+    if (message.size == 0) {
+        printf("Server sent an empty message\n");
+        disconnectSharedMemory(&shmctx);
+        exit(1);
+    }
 
-    if (disconnectFromSharedMemory(shmaddr) == -1) exit(1);
-
+    unsigned char digest[DIGEST_SLOT];
+    ssize_t bytesRead = readReturnSharedMemory(shmctx.sharedMemory, message.block_id, digest, message.size);
+    
+    // Initiate step 5
+    if (bytesRead == -1) printf("Could not read from result section\n");
+    else printf("%s\n", digest);
+    
+    disconnectSharedMemory(&shmctx);
     return 0;
 }
 
@@ -50,79 +108,71 @@ int usageCheck (int argc) {
 
 /**
  * Connects the client to the shared memory environment needed for IPC
- * @param shmid Shared memory ID
- * @param shmaddr Shared memory address
+ * @param context Shared memory context
  * @return 0 on success, -1 on failure
  */
-int connectToSharedMemory (int* shmid, int** shmaddr) {
-    int result = 0;
-    
-    *shmid = getSharedMemoryID();
-    if (*shmid == -1) {
+int connectSharedMemory (SharedMemoryContext* context) {   
+    context->shmid = getSharedMemoryID();
+    if (context->shmid == -1) {
         printf("Shared memory was not found\n");
-        result = -1;
-    }
-
-    *shmaddr = attachToSharedMemory(*shmid);
-    if (shmaddr == (void*)-1) {
-        printf("Could not attach to shared memory\n");
-        result = -1;
-    }
-
-    if (result == -1) disconnectFromSharedMemory(*shmaddr);
-    return result;
-}
-
-/**
- * Fetches the queues required for IPC
- * @param msqid_req Request message queue ID
- * @param msqid_ret Return message queue ID
- * @return 0 on success, -1 on failure
- */
-int findMessageQueues (int* msqid_req, int* msqid_ret) {
-    int result = 0;
-    *msqid_req = getMessageQueueID(KEY_REQUEST_QUEUE);
-    if (*msqid_req == -1) {
-        printf("Request message queue was not found\n");
-        result = -1;
-    }
-
-    *msqid_ret = getMessageQueueID(KEY_RETURN_QUEUE);
-    if (*msqid_ret == -1) {
-        printf("Return message queue was not found\n");
-        result = -1;
-    }
-    return result;
-}
-
-/**
- * Gracefully terminates attachment to shared memory
- * @param shmaddr Shared memory address
- * @return 0 on success, -1 on failure
- */
-int disconnectFromSharedMemory (int* shmaddr) {
-    if (detachFromSharedMemory(shmaddr) == -1) {
-        printf("Could not detach from shared memory\n");
         return -1;
     }
+
+    context->sharedMemory = attachToSharedMemory(context->shmid);
+    if (context->sharedMemory == (void*)-1) {
+        printf("Could not attach to shared memory\n");
+        context->shmid = -1;
+        context->sharedMemory = NULL;
+        return -1;
+    }
+
     return 0;
 }
 
 /**
- * Initializes fields applied to message to be sent
+ * Fetches and connects to the queues required for IPC
+ * @param context Message queue context
+ * @return 0 on success, -1 on failure
  */
-MessageHeader createMessage (/*unsigned int block_id, size_t size, unsigned int block_index, unsigned int block_total*/) {
-    MessageHeader message;
-    
-    // use getpid() and give it to mtype
-    message.mtype = getpid();
-    
-    // calc message file size
+int connectMessageQueues (MessageQueueContext* context) {
+    context->msqid_req = getMessageQueueID(KEY_REQUEST_QUEUE);
+    if (context->msqid_req == -1) {
+        printf("Could not connect to request queue\n");
+        return -1;
+    }
 
-    // message.block_id = block_id;
-    // message.size = size;
-    // message.block_index = block_index;
-    // message.block_total = block_total;
+    context->msqid_ret = getMessageQueueID(KEY_RETURN_QUEUE);
+    if (context->msqid_ret == -1) {
+        printf("Could not connect to return queue\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
+ * Gracefully terminates attachment to shared memory
+ * @param context Shared memory context
+ */
+void disconnectSharedMemory (SharedMemoryContext* context) {
+    if (detachFromSharedMemory(context->sharedMemory) == -1) printf("Could not detach from shared memory\n");
+}
+
+/**
+ * Initializes fields of the message to be sent
+ * @param block_id ID number corresponding to the block used inside shared memory
+ * @param size Size of the contents to write into shared memory
+ * @param block_index If multiple blocks are needed, shows the correct order of reconstruction
+ * @param block_total Total blocks required to write the entire file
+ */
+MessageHeader createMessage (unsigned int block_id, size_t size, unsigned int block_index, unsigned int block_total) {
+    
+    MessageHeader message;
+    message.mtype = getpid();
+    message.size = size;
+    message.block_id = block_id;
+    message.block_index = block_index;
+    message.block_total = block_total;
 
     return message;
 }

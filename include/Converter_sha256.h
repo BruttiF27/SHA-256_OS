@@ -6,6 +6,6 @@
 #include <stdlib.h>
 #include <openssl/sha.h>
 
-int digestContent (char*, char*);
+int digestContent (char*, char*, size_t);
 
 # endif

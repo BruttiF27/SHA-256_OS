@@ -1,0 +1,48 @@
+Questa è una richiesta di conversione lunga abbastanza da richiedere più di un blocco all'interno della memoria condivisa. Non avendo idee particolari
+ho deciso di prendere un estratto della pagina di wikipedia riguardante Ada Lovelace.
+
+Augusta Ada Byron, contessa di Lovelace, meglio nota come Ada Lovelace (Londra, 10 dicembre 1815 – Londra, 27 novembre 1852), è stata una nobildonna
+e matematica britannica, nota soprattutto per il suo contributo alla macchina analitica ideata da Charles Babbage.
+Tra i suoi appunti sulla macchina di Babbage si rintraccia anche un algoritmo per generare i numeri di Bernoulli, considerato come il primo algoritmo
+espressamente inteso per essere elaborato da una macchina, tanto che Ada Lovelace è spesso ricordata come la prima programmatrice di computer al mondo,
+benché alcuni contestino tale affermazione.
+Ada Lovelace fu la sola figlia legittima del poeta Lord Byron e della matematica Anne Isabella Milbanke. Non conobbe il padre, che lasciò la famiglia
+quando lei non aveva ancora un anno di vita. Fin da giovane s'interessò alle scienze matematiche e in particolare al lavoro di Babbage sulla macchina
+analitica. Anche se la macchina di Babbage non fu mai costruita, gli studi di Lovelace sono importanti per la storia del computer. Ada Lovelace aveva
+previsto anche la capacità dei computer di andare di là dal mero calcolo numerico, mentre altri, incluso lo stesso Babbage, si focalizzavano soltanto
+su questa capacità.
+
+I primi anni
+Ada Lovelace, nata il 10 dicembre 1815, era l'unica figlia legittima del poeta Lord Byron e di sua moglie, Anne Isabella Milbanke (detta "Annabella").
+Sia Byron, sia molti suoi conoscenti prevedevano che la piccola Ada sarebbe diventata una bambina prodigio. Le fu dato il nome della sorellastra del
+padre, Augusta Leigh, ma anche quest'ultimo la chiamava Ada.
+Il 16 gennaio del 1816 Annabella, per ordine di Byron, lasciò la casa del marito e si trasferì in quella dei suoi genitori a Kirkby Mallory, portando
+con sé la piccola Ada, che aveva appena un mese di vita. Nonostante la legge inglese desse al padre piena custodia dei figli in caso di separazione,
+Byron non rivendicò i suoi diritti di paternità. Il 21 aprile Byron firmò l'atto di separazione e, sebbene con riluttanza, lasciò per sempre
+l'Inghilterra alcuni giorni dopo. Byron non ebbe alcuna relazione con sua figlia e morì nel 1824, durante la guerra d'indipendenza greca, quando lei
+aveva solo 8 anni; per Ada la madre fu la sola figura familiare importante. La piccola era spesso malata, fin dalla prima infanzia: all'età di otto
+anni soffriva di cefalea, che le procurava problemi alla vista. Nel giugno del 1829, a causa del morbillo, rimase paralizzata e costretta a rimanere a
+letto per quasi un anno. Solo nel 1831 tornò a camminare con l'aiuto di grucce.
+
+Nonostante le malattie, Ada continuò il suo percorso di istruzione: su iniziativa della madre, terrorizzata dall'idea che potesse dedicarsi alla poesia
+come il padre, all'età di 17 anni fu istruita in matematica e scienze da William Frend, William King e Mary Somerville, illustre matematica che aveva
+tradotto in inglese i lavori di Laplace e aveva scritto dei testi utilizzati all'Università di Cambridge. La Somerville incoraggiò Ada nel proseguire
+gli studi matematici e tentò inoltre di farle apprendere i principi fondamentali della scienza, ponendoli in una dimensione più vicina alla sfera
+filosofica e poetica. In seguito ebbe come tutrice Sophia Elisabeth Frend(figlia del matematico e scrittore William Frend) e in seguito del suo celebre
+marito Augustus De Morgan,matematico e logico, professore all'Università di Londra, il quale si occupò negli anni successivi di introdurre Ada a studi
+di livello più avanzato di algebra, logica e analisi, fatto inconsueto per una donna del suo tempo. Dal 1832 l'abilità di Ada cominciò a emergere e il
+suo interesse per la matematica dominò tutta la sua vita anche dopo il matrimonio. In una lettera alla madre di Ada, De Morgan l'informò dell'abilità
+di sua figlia e le disse che poteva diventare "un eccellente e originale matematico", addirittura "un'eminenza di prima categoria". Ada era anche
+dedita alla musica, in particolare amava suonare l'arpa.
+
+Ada non incontrò mai la sua giovane sorellastra, Allegra Byron, figlia di Lord Byron e Claire Clairmont, che morì nel 1822 all'età di soli cinque anni.
+Aveva comunque contatti con Elizabeth Medora Leigh, figlia della sorellastra del padre; quest'ultima evitò la nipote intenzionalmente quando questa fu
+presentata a Corte.
+
+Maturità
+Il 5 giugno 1833, a un ricevimento tenuto dalla Somerville, Ada ebbe modo di incontrare il matematico Charles Babbage, all'epoca già autore della
+macchina differenziale. Altre conoscenze di rilievo furono Sir David Brewster, Charles Wheatstone, Charles Dickens e Michael Faraday. Dal 1834
+frequentò regolarmente la Corte. Ada ballava talmente bene da incantare molte persone; John Hobhouse, amico di Byron, fu l'unico a non apprezzarla,
+definendola come una "giovane donna grassa, dalla pelle ruvida, ma con qualche caratteristica del padre, particolarmente la bocca". A causa di ciò, il
+24 febbraio 1834, durante una riunione, Ada avvicinò Hobhouse e gli disse chiaramente che non aveva una buona opinione di lui, infatti è probabile che
+anche l'influenza della madre la portò a odiare tutti gli amici del padre. Questo astio non durò a lungo; più avanti i due divennero amici

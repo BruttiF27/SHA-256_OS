@@ -10,17 +10,21 @@
 # include <openssl/sha.h>
 
 # include "Converter_sha256.h"
-# include "CommunicationHandler.h"
+# include "SharedMemoryUtils.h"
+# include "MessageQueueUtils.h"
 # include "FileHandler.h"
-# include "Utils.h"
 
 __sig_atomic_t termination_flag = 0;
 
-int initializeSharedMemory (int*);
-int initializeMessageQueues (int*, int*);
-void terminateSharedMemory (int);
-void terminateMessageQueues (int, int);
-MessageHeader createMessage (long);
+int initializeSharedMemory (SharedMemoryContext*);
+int initializeMessageQueues (MessageQueueContext*);
+void terminateSharedMemory (SharedMemoryContext*);
+void terminateMessageQueues (MessageQueueContext*);
+
+ssize_t collectBytes (SharedMemory*, int, MessageHeader*, unsigned char*);
+int sendReply (int, long, unsigned int, size_t);
+MessageHeader createMessage (long, unsigned int, size_t);
+
 void sigintHandler (int);
 
 # endif
