@@ -17,10 +17,9 @@ Per il voto massimo:
 - Istanziare processi distinti per elaborare richieste multiple concorrenti.
 - Introdurre un limite al numero di processi in esecuzione, modificabile dinamicamente da un secondo client.
 - Schedulare richieste precedenti in ordine di dimensione di file (SJF, deduco?).
-- Usare almeno un semaforo per sincronizzare il flusso di comunicazione e/o processamento.
+- OK Usare almeno un semaforo per sincronizzare il flusso di comunicazione e/o processamento.
 
 # Roadmap
-- Implementazione di semafori per il controllo sui blocchi della memoria condivisa e dunque garantire protezione.
 - Gestione di multiple richieste concorrenti istanziando più processi dal server
 - Implementazione di un modo per limitare il numero di processi del server in esecuzione
 - Scheduling delle richieste in base alla dimensione dei file
