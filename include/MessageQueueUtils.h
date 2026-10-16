@@ -20,15 +20,19 @@ typedef struct MessageHeader {
 } MessageHeader;
 
 typedef struct MessageQueueContext {
-    int msqid_req;
-    int msqid_ret;
+    int msqid_req;              // ID related to request message queue
+    int msqid_ret;              // ID related to return message queue
 } MessageQueueContext;
 
 int createMessageQueue (int);
+int closeMessageQueue (int);
+int getMessageQueueID (int);
+
+MessageHeader createRequest (unsigned int, size_t, unsigned int, unsigned int);
+MessageHeader createReply (long, unsigned int, size_t);
+
 int sendMessage (int, MessageHeader*, size_t);
 ssize_t receiveMessage (int, MessageHeader*, size_t, long);
 size_t getMessageSize (MessageHeader*);
-int getMessageQueueID (int);
-int closeMessageQueue (int);
 
 # endif

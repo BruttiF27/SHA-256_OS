@@ -40,7 +40,6 @@ int getSharedMemoryID () {
 }
 
 /**
- * TODO
  * Reads data from a specific block inside shared memory
  * @param sharedMemory Shared memory
  * @param block_id Block ID where data will be read
@@ -48,20 +47,17 @@ int getSharedMemoryID () {
  * @param size Size of the data. Must not be greater than BLOCK_SIZE
  * @return Number of bytes that have been copied
  */
-ssize_t readRequestSharedMemory (SharedMemory* sharedMemory, unsigned int block_id, unsigned char* outData, size_t size) {
+ssize_t readRequestSharedMemory (SharedMemory* sharedMemory, unsigned int block_id, unsigned char* outData, size_t size, int semID) {
     if (sharedMemory == NULL || outData == NULL || block_id >= REQUEST_BLOCKS || size > BLOCK_SIZE) return -1;
-    
-    if (sharedMemory->requestSection[block_id].inUse) {
-        memcpy(outData, sharedMemory->requestSection[block_id].data, size);
-        sharedMemory->requestSection[block_id].inUse = 0;
-        return (ssize_t) size;
-    }
-    
-    return -1;
+
+    memcpy(outData, sharedMemory->requestSection[block_id].data, size);
+    semaphorePost(semID, SEM_REQUEST_BASE+block_id);
+    semaphorePost(semID, SEM_REQUEST_FREE);
+
+    return (ssize_t) size;
 }
 
 /**
- * TODO Will eventually need semaphore for protection
  * Reads data from a specific block inside shared memory
  * @param sharedMemory Shared memory
  * @param slot_id Slot where data will be read
@@ -69,56 +65,57 @@ ssize_t readRequestSharedMemory (SharedMemory* sharedMemory, unsigned int block_
  * @param size Size of the data. Must not be greater than DIGEST_SLOT
  * @return Number of bytes that have been copied
  */
-ssize_t readReturnSharedMemory (SharedMemory* sharedMemory, unsigned int slot_id, unsigned char* outData, size_t size) {
+ssize_t readReturnSharedMemory (SharedMemory* sharedMemory, unsigned int slot_id, unsigned char* outData, size_t size, int semID) {
     if (sharedMemory == NULL || outData == NULL || slot_id >= RESULT_SLOTS || size > DIGEST_SLOT) return -1;
 
-    if (sharedMemory->resultSection[slot_id].inUse) {
-        memcpy(outData, sharedMemory->resultSection[slot_id].digest, size);
-        sharedMemory->resultSection[slot_id].inUse = 0;
-        return (ssize_t) size;
-    }
+    memcpy(outData, sharedMemory->resultSection[slot_id].digest, size);
+    semaphorePost(semID, SEM_RETURN_BASE+slot_id);
+    semaphorePost(semID, SEM_RETURN_FREE);
 
-    return -1;
+    return (ssize_t) size;
 }
 
 /**
- * TODO will eventually need semaphore for protection
  * Writes data into a usable request block inside shared memory
  * @param sharedMemory Shared memory address
  * @param data data to be written inside the block
  * @param size data size
  * @return Number of the request block used on success [0, REQUEST_BLOCKS-1], -1 on failure
  */
-int writeRequestSharedMemory (SharedMemory* sharedMemory, const unsigned char* data, size_t size) {
+int writeRequestSharedMemory (SharedMemory* sharedMemory, const unsigned char* data, size_t size, int semID) {
     if (sharedMemory == NULL || data == NULL || size > BLOCK_SIZE) return -1;
+    if (semaphoreWait(semID, SEM_REQUEST_FREE) == -1) return -1;
+
     for (int i = 0; i < REQUEST_BLOCKS; i++) {
-        if (!sharedMemory->requestSection[i].inUse) {
+        if (semaphoreTryWait(semID, SEM_REQUEST_BASE+i) == 0) {
             memcpy(sharedMemory->requestSection[i].data, data, size);
-            sharedMemory->requestSection[i].inUse = 1;
             return i;
         }
     }
 
+    semaphorePost(semID, SEM_REQUEST_FREE);
     return -1;
 }
 
 /**
- * TODO will eventually need semaphore for protection
  * Writes data into a usable return slot inside shared memory
  * @param sharedMemory Shared memory address
  * @param data data to be written inside the block
  * @param size data size
  * @return Number of the return slot used on success [0, RESULT_SLOTS-1], -1 on failure
  */
-int writeReturnSharedMemory (SharedMemory* sharedMemory, const unsigned char* data, size_t size) {
+int writeReturnSharedMemory (SharedMemory* sharedMemory, const unsigned char* data, size_t size, int semID) {
     if (sharedMemory == NULL || data == NULL || size > DIGEST_SLOT) return -1;
+    if (semaphoreWait(semID, SEM_RETURN_FREE) == -1) return -1;
+    
+    
     for (int i = 0; i < RESULT_SLOTS; i++) {
-        if (!sharedMemory->resultSection[i].inUse) {
+        if (semaphoreTryWait(semID, SEM_RETURN_BASE+i) == 0) {
             memcpy(sharedMemory->resultSection[i].digest, data, size);
-            sharedMemory->resultSection[i].inUse = 1;
             return i;
         }
     }
 
+    semaphorePost(semID, SEM_RETURN_FREE);
     return -1;
 }

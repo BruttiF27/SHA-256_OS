@@ -12,18 +12,20 @@
 # include "Converter_sha256.h"
 # include "SharedMemoryUtils.h"
 # include "MessageQueueUtils.h"
+# include "SemaphoreUtils.h"
 # include "FileHandler.h"
 
 __sig_atomic_t termination_flag = 0;
 
 int initializeSharedMemory (SharedMemoryContext*);
 int initializeMessageQueues (MessageQueueContext*);
+int initializeSemaphores (int*);
 void terminateSharedMemory (SharedMemoryContext*);
 void terminateMessageQueues (MessageQueueContext*);
+void terminateSemaphores (int*);
 
-ssize_t collectBytes (SharedMemory*, int, MessageHeader*, unsigned char*);
+ssize_t collectBytes (SharedMemory*, int, MessageHeader*, unsigned char*, int);
 int sendReply (int, long, unsigned int, size_t);
-MessageHeader createMessage (long, unsigned int, size_t);
 
 void sigintHandler (int);
 

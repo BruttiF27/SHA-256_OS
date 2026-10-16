@@ -8,6 +8,8 @@
 # include <sys/shm.h>
 # include <openssl/sha.h>
 
+# include "SemaphoreUtils.h"
+
 # define BLOCK_SIZE 4096
 # define REQUEST_BLOCKS 15
 # define RESULT_SLOTS 16
@@ -17,12 +19,10 @@
 # define KEY_SHARED_MEMORY 27
 
 typedef struct Block {
-    unsigned int inUse;                     // Tells if a block is usable for writing (0=yes, 1=no)
     unsigned char data[BLOCK_SIZE];         // Actual contents of the block
 } Block;
 
 typedef struct ResultSlot {
-    unsigned int inUse;                     // Tells if a slot is usable for writing (0=yes, 1=no)
     unsigned char digest[DIGEST_SLOT];      // Digest produced by the server
 } ResultSlot;
 
@@ -38,13 +38,14 @@ typedef struct SharedMemoryContext {
 
 int createSharedMemory ();
 int closeSharedMemory (int);
-SharedMemory* attachToSharedMemory (int);
-int detachFromSharedMemory (SharedMemory*);
 int getSharedMemoryID ();
 
-ssize_t readRequestSharedMemory (SharedMemory*, unsigned int, unsigned char*, size_t);
-ssize_t readReturnSharedMemory (SharedMemory*, unsigned int, unsigned char*, size_t);
-int writeRequestSharedMemory (SharedMemory*, const unsigned char*, size_t);
-int writeReturnSharedMemory (SharedMemory*, const unsigned char*, size_t);
+SharedMemory* attachToSharedMemory (int);
+int detachFromSharedMemory (SharedMemory*);
+
+ssize_t readRequestSharedMemory (SharedMemory*, unsigned int, unsigned char*, size_t, int);
+ssize_t readReturnSharedMemory (SharedMemory*, unsigned int, unsigned char*, size_t, int);
+int writeRequestSharedMemory (SharedMemory*, const unsigned char*, size_t, int);
+int writeReturnSharedMemory (SharedMemory*, const unsigned char*, size_t, int);
 
 # endif

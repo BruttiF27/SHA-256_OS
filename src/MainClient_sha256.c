@@ -15,80 +15,55 @@ int main (int argc, char *argv[]) {
     SharedMemoryContext shmctx = {-1, NULL};
     if (connectSharedMemory(&shmctx) == -1) exit(1);
     MessageQueueContext msqctx = {-1, -1};
-    if (connectMessageQueues(&msqctx) == -1) {
-        disconnectSharedMemory(&shmctx);
-        exit(1);
-    }
+    if (connectMessageQueues(&msqctx) == -1) terminateSession(&shmctx, -1, "Could not connect to message queue");
+    int semID = -1;
+    if (connectSemaphores(&semID) == -1) terminateSession(&shmctx, -1, "Could not connect to semaphore set");
 
     int fileDescriptor = open(argv[1], O_RDONLY, 0);
     struct stat stats;
     if (fileDescriptor < 0 || fstat(fileDescriptor, &stats) != 0) {
-        printf("File could not be opened or stats could not be fetched\n");
-        disconnectSharedMemory(&shmctx);
-        close(fileDescriptor);
-        exit(1);
+        terminateSession(&shmctx, fileDescriptor, "File could not be opened or stats could not be fetched");
     }
     
     int requiredBlocks = ((size_t)stats.st_size + BLOCK_SIZE-1) / BLOCK_SIZE;
-    if (requiredBlocks == 0 || requiredBlocks > 15) {
-        printf("Empty file received or file too big\n");
-        disconnectSharedMemory(&shmctx);
-        close(fileDescriptor);
-        exit(1);
-    }
+    if (requiredBlocks == 0 || requiredBlocks > REQUEST_BLOCKS) terminateSession(&shmctx, fileDescriptor, "Empty file received or file too big");
 
     MessageHeader message;
     unsigned char fileBuffer[BLOCK_SIZE];
     for (int block_index = 0; block_index < requiredBlocks; block_index++) {
         // Initiate step 2
         ssize_t fileSize = readChunk(fileDescriptor, fileBuffer, BLOCK_SIZE);
-        if (fileSize == -1) {
-            printf("Provided file could not be read\n");
-            disconnectSharedMemory(&shmctx);
-            close(fileDescriptor);
-            exit(1);
-        }
-
-        int block_id = writeRequestSharedMemory(shmctx.sharedMemory, fileBuffer, fileSize);
-        if (block_id == -1) {
-            printf("No blocks currently available\n");
-            disconnectSharedMemory(&shmctx);
-            close(fileDescriptor);
-            exit(1);
-        }
+        if (fileSize <= 0) terminateSession(&shmctx, fileDescriptor, "Provided file could not be read");
+        
+        int block_id = writeRequestSharedMemory(shmctx.sharedMemory, fileBuffer, fileSize, semID);
+        if (block_id == -1) terminateSession(&shmctx, fileDescriptor, "No blocks currently available");
         
         // Initiate step 3
-        message = createMessage(block_id, fileSize, block_index, requiredBlocks);
+        message = createRequest(block_id, fileSize, block_index, requiredBlocks);
         if (sendMessage(msqctx.msqid_req, &message, getMessageSize(&message)) == -1) {
-            printf("Message could not be sent\n");
-            disconnectSharedMemory(&shmctx);
-            close(fileDescriptor);
-            exit(1);
+            terminateSession(&shmctx, fileDescriptor, "Message could not be sent");
         } else printf("Message sent by the client. Mtype: %ld\n", message.mtype);
     }
 
-    close(fileDescriptor);
-
     // Initiate step 4
     if (receiveMessage(msqctx.msqid_ret, &message, getMessageSize(&message), getpid()) == -1) {
-        printf("Message could not be received\n");
-        disconnectSharedMemory(&shmctx);
-        exit(1);
+        terminateSession(&shmctx, fileDescriptor, "Message could not be received");
     } else printf("Message received by the client. Mtype: %ld\n", message.mtype);
 
-    if (message.size == 0) {
-        printf("Server sent an empty message\n");
-        disconnectSharedMemory(&shmctx);
-        exit(1);
-    }
+    close(fileDescriptor);
 
-    unsigned char digest[DIGEST_SLOT];
-    ssize_t bytesRead = readReturnSharedMemory(shmctx.sharedMemory, message.block_id, digest, message.size);
+    if (message.size == 0) terminateSession(&shmctx, fileDescriptor, "Server sent an empty message");
+
+    unsigned char digest[DIGEST_SLOT+1];
+    ssize_t bytesRead = readReturnSharedMemory(shmctx.sharedMemory, message.block_id, digest, message.size, semID);
     
     // Initiate step 5
     if (bytesRead == -1) printf("Could not read from result section\n");
-    else printf("%s\n", digest);
-    
+    else {
+        digest[bytesRead] = '\0';
+        printf("%s\n", digest);
+    }
+
     disconnectSharedMemory(&shmctx);
     return 0;
 }
@@ -151,6 +126,20 @@ int connectMessageQueues (MessageQueueContext* context) {
 }
 
 /**
+ * Fetches and connects client to the semaphore set created in the server
+ * @param semID Semaphore set ID
+ * @return 0 on success, -1 on failure
+ */
+int connectSemaphores (int* semID) {
+    *semID = getSemaphoreSetID();
+    if (*semID == -1) {
+        printf("Could not find semaphore set\n");
+        return -1;
+    }
+    return 0;
+}
+
+/**
  * Gracefully terminates attachment to shared memory
  * @param context Shared memory context
  */
@@ -159,20 +148,14 @@ void disconnectSharedMemory (SharedMemoryContext* context) {
 }
 
 /**
- * Initializes fields of the message to be sent
- * @param block_id ID number corresponding to the block used inside shared memory
- * @param size Size of the contents to write into shared memory
- * @param block_index If multiple blocks are needed, shows the correct order of reconstruction
- * @param block_total Total blocks required to write the entire file
+ * Terminates current section due to an error explained by errorMessage
+ * @param shmctx Shared memory context
+ * @param fileDescriptor File descriptor related to read file
+ * @param errorMessage Explains what the problem was
  */
-MessageHeader createMessage (unsigned int block_id, size_t size, unsigned int block_index, unsigned int block_total) {
-    
-    MessageHeader message;
-    message.mtype = getpid();
-    message.size = size;
-    message.block_id = block_id;
-    message.block_index = block_index;
-    message.block_total = block_total;
-
-    return message;
+void terminateSession (SharedMemoryContext* shmctx, int fileDescriptor, const char* errorMessage) {
+    if (errorMessage != NULL) printf("%s\n", errorMessage);
+    if (fileDescriptor >= 0) close(fileDescriptor);
+    disconnectSharedMemory(shmctx);
+    exit(1);
 }

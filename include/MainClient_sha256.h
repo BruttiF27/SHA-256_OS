@@ -10,12 +10,16 @@
 # include "Converter_sha256.h"
 # include "SharedMemoryUtils.h"
 # include "MessageQueueUtils.h"
+# include "SemaphoreUtils.h"
 # include "FileHandler.h"
 
 int usageCheck (int);
+
 int connectSharedMemory (SharedMemoryContext*);
 int connectMessageQueues (MessageQueueContext*);
+int connectSemaphores (int*);
+
 void disconnectSharedMemory (SharedMemoryContext*);
-MessageHeader createMessage (unsigned int, size_t, unsigned int, unsigned int);
+void terminateSession (SharedMemoryContext*, int, const char*);
 
 # endif
