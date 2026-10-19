@@ -15,10 +15,9 @@ Minimo necessario:
 
 Per il voto massimo:
 - OK Istanziare processi distinti per elaborare richieste multiple concorrenti.
-- Introdurre un limite al numero di processi in esecuzione, modificabile dinamicamente da un secondo client.
-- Schedulare richieste precedenti in ordine di dimensione di file (SJF, deduco?).
+- OK Introdurre un limite al numero di processi in esecuzione, modificabile dinamicamente da un secondo client.
+- OK Schedulare richieste precedenti in ordine di dimensione di file (SJF, deduco?).
 - OK Usare almeno un semaforo per sincronizzare il flusso di comunicazione e/o processamento.
 
 # Roadmap
-- Implementazione di un modo per limitare il numero di processi del server in esecuzione
-- Scheduling delle richieste in base alla dimensione dei file
+- Refactoring per una corretta divisione dei compiti
