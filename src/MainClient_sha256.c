@@ -1,7 +1,7 @@
 # include "MainClient_sha256.h"
 
 /**
- * Must be run after the client activates for the software to work properly
+ * Must be run after the server activates for the software to work properly
  * 1. Connects to an existing shared memory segment, defined in the server.
  * 2. Fetches the filename from argv[1] and writes its contents inside a usable block of client shared memory section
  * 3. Sends a message to the server to advise him to fetch the written contents and waits for the answer
@@ -46,7 +46,7 @@ int main (int argc, char *argv[]) {
     }
 
     // Initiate step 4
-    if (receiveMessage(msqctx.msqid_ret, &message, getMessageSize(&message), getpid()) == -1) {
+    if (receiveMessage(msqctx.msqid_ret, &message, getMessageSize(&message), getpid(), 0) == -1) {
         terminateSession(&shmctx, fileDescriptor, "Message could not be received");
     } else printf("Message received by the client. Mtype: %ld\n", message.mtype);
 

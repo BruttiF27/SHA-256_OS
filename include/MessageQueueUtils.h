@@ -11,6 +11,8 @@
 # define KEY_REQUEST_QUEUE 28
 # define KEY_RETURN_QUEUE 29
 
+# define ADMIN_MTYPE 1
+
 typedef struct MessageHeader {
     long mtype;                 // Identifies client/server messages (value must be mtype > 0)
     unsigned int block_id;      // Keeps block id inside shared memory or block slot inside the result section (15th)
@@ -32,7 +34,7 @@ MessageHeader createRequest (unsigned int, size_t, unsigned int, unsigned int);
 MessageHeader createReply (long, unsigned int, size_t);
 
 int sendMessage (int, MessageHeader*, size_t);
-ssize_t receiveMessage (int, MessageHeader*, size_t, long);
+ssize_t receiveMessage (int, MessageHeader*, size_t, long, int);
 size_t getMessageSize (MessageHeader*);
 
 # endif

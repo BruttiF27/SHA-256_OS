@@ -30,57 +30,50 @@ int main (int argc, char *argv[]) {
     MessageHeader message;
     unsigned char rawData[BLOCK_SIZE * REQUEST_BLOCKS];
     do {
-        // Initiate step 2
-        if (receiveMessage(msqctx.msqid_req, &message, getMessageSize(&message), 0) == -1) {
+        int flags = (backlogCount == 0 && activeChildren == 0) ? 0 : IPC_NOWAIT;
+        ssize_t received = receiveMessage(msqctx.msqid_req, &message, getMessageSize(&message), 0, flags);
+        
+        // Failed reception
+        if (received == -1) {
+            int err = errno;
             if (termination_flag == 1) break;
-            else if (errno == EINTR) continue;
-            else printf("Message could not be received\n"); continue;
-        } else printf("Message received by the server. Mtype: %ld\n", message.mtype);
-
-        long mtype = message.mtype;
-        ssize_t total = collectBytes(shmctx.sharedMemory, msqctx.msqid_req, &message, rawData, semID);
-        if (total == -1) {
-            if (termination_flag == 1) break;
-            printf("Could not collect request data\n");
-            sendReply(msqctx.msqid_ret, mtype, 0, 0);
-            continue;
-        }
-
-        // Child processes instantiation
-        fflush(stdout);
-        pid_t pid = fork();
-        if (pid == -1) {
-            printf("Could not create child process\n");
-            sendReply(msqctx.msqid_ret, mtype, 0, 0);
-            continue;
-        }
-
-        if (pid == 0) {
-            // Initiate step 3
-            unsigned char digest[DIGEST_SLOT];
-            if (digestContent(digest, rawData, (size_t) total)) {
-                printf("Could not digest data\n");
-                sendReply(msqctx.msqid_ret, mtype, 0, 0);
-                _exit(1);
+            if (err == ENOMSG || err == EINTR) {
+                /* TODO The hell am I supposed to do here */
+            } else printf("Message could not be received\n");
+        
+        // Admin message
+        } else if (message.mtype == ADMIN_MTYPE) {
+            if (message.size > 0 && message.size < 65) {
+                maxChildren = (int) message.size;
+                printf("Process limit updated to %d\n", maxChildren);
             }
 
-            // 2. write digest to a result slot
-            int slot_id = writeReturnSharedMemory(shmctx.sharedMemory, digest, 65, semID);
-            if (slot_id == -1) {
-                printf("Could not write digest\n");
+        // Normal conversion request
+        } else {
+            long mtype = message.mtype;
+            ssize_t total = collectBytes(shmctx.sharedMemory, msqctx.msqid_req, &message, rawData, semID);
+            if (total == -1) {
+                if (termination_flag == 1) break;
                 sendReply(msqctx.msqid_ret, mtype, 0, 0);
-                _exit(1);
+            } else {
+                unsigned char* requestData = malloc(total);
+                if (requestData != NULL) memcpy(requestData, rawData, total);
+
+                if (requestData == NULL || addJob(mtype, total, requestData) == -1) {
+                    free(requestData);
+                    sendReply(msqctx.msqid_ret, mtype, 0, 0);
+                }
             }
+        }
 
-            // Uncomment to test concurrency and semaphores
-            sleep(5);
-
-            // Initiate step 5
-            if (sendReply(msqctx.msqid_ret, mtype, slot_id, 65) == -1) printf("Message could not be sent\n");
-            else printf("Message sent by the server. Mtype: %ld\n", mtype);
-
-            _exit(0);
-        }      
+        while (activeChildren < maxChildren && backlogCount > 0) {
+            int shortestJob = findShortestJob();
+            dispatchJob(&backlog[shortestJob], shmctx.sharedMemory, &msqctx, semID);
+            free(backlog[shortestJob].data);
+            removeJob(shortestJob);
+        }
+        
+        if (backlogCount > 0 || activeChildren > 0) usleep(50000); 
     } while (termination_flag != 1);
 
     terminateChildren();
@@ -207,7 +200,7 @@ ssize_t collectBytes (SharedMemory* sharedMemory, int msqid_req, MessageHeader* 
         if (got > 0) {
             ssize_t received;
             do {
-                received = receiveMessage(msqid_req, &current, getMessageSize(&current), mtype);
+                received = receiveMessage(msqid_req, &current, getMessageSize(&current), mtype, 0);
             } while (received == -1 && errno == EINTR && !termination_flag);
             if (received == -1) return -1;
         }
@@ -251,7 +244,7 @@ void sigintHandler (int sigNum) { termination_flag = 1; }
  */
 void sigchldHandler (int sigNum) {
     int saved = errno;
-    while (waitpid(-1, NULL, WNOHANG) > 0);
+    while (waitpid(-1, NULL, WNOHANG) > 0) activeChildren--;
     errno = saved;
 }
 
@@ -263,5 +256,59 @@ void terminateChildren () {
         pid_t child = waitpid(-1, NULL, 0);
         if (child > 0 || (child == -1 && errno == EINTR)) continue;
         else break;
+    }
+}
+
+/**
+ * Creates the environment where children processes are to operate.
+ * 1. Defines signal set to be used
+ * 2. Forks children
+ * 3. Digest data read from shared memory
+ * 4. Write the digest in the result section and sends a message to the client.
+ * 5. The child kills itself.
+ */
+void dispatchJob (Job* job, SharedMemory* sharedMemory, MessageQueueContext* msqctx, int semID) {
+    sigset_t block, old;
+    sigemptyset(&block);
+    sigaddset(&block, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &block, &old);
+
+    fflush(stdout);
+    pid_t pid = fork();
+
+    if (pid > 0) activeChildren++;
+    sigprocmask(SIG_SETMASK, &old, NULL);
+
+    if (pid == -1) {
+        printf("Could not create child process\n");
+        sendReply(msqctx->msqid_ret, job->mtype, 0, 0);
+        return;
+    }
+
+    if (pid == 0) {
+        // Initiate step 3
+        unsigned char digest[DIGEST_SLOT];
+        if (digestContent(digest, job->data, (size_t) job->size)) {
+            printf("Could not digest data\n");
+            sendReply(msqctx->msqid_ret, job->mtype, 0, 0);
+            _exit(1);
+        }
+
+        // 2. write digest to a result slot
+        int slot_id = writeReturnSharedMemory(sharedMemory, digest, 65, semID);
+        if (slot_id == -1) {
+            printf("Could not write digest\n");
+            sendReply(msqctx->msqid_ret, job->mtype, 0, 0);
+            _exit(1);
+        }
+
+        // Uncomment to test concurrency and semaphores
+        sleep(5);
+
+        // Initiate step 5
+        if (sendReply(msqctx->msqid_ret, job->mtype, slot_id, 65) == -1) printf("Message could not be sent\n");
+        else printf("Message sent by the server. Mtype: %ld\n", job->mtype);
+
+        _exit(0);
     }
 }

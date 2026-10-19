@@ -14,10 +14,13 @@
 # include "Converter_sha256.h"
 # include "SharedMemoryUtils.h"
 # include "MessageQueueUtils.h"
+# include "JobScheduler.h"
 # include "SemaphoreUtils.h"
 # include "FileHandler.h"
 
-__sig_atomic_t termination_flag = 0;
+volatile __sig_atomic_t termination_flag = 0;
+volatile __sig_atomic_t activeChildren = 0;
+int maxChildren = 16;
 
 int initializeSharedMemory (SharedMemoryContext*);
 int initializeMessageQueues (MessageQueueContext*);
@@ -33,5 +36,7 @@ void sigintHandler (int);
 void sigchldHandler (int);
 
 void terminateChildren ();
+
+void dispatchJob (Job*, SharedMemory*, MessageQueueContext*, int);
 
 # endif

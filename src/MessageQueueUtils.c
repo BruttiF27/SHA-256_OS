@@ -83,8 +83,8 @@ int sendMessage (int msqid, MessageHeader* msg, size_t msgsz) { return msgsnd(ms
  * @param msgsz Message size
  * @param msgtype Message selector, keep to 0 for FCFS
  */
-ssize_t receiveMessage (int msqid, MessageHeader* msg, size_t msgsz, long msgtype) {
-    return msgrcv(msqid, msg, msgsz, msgtype, 0);
+ssize_t receiveMessage (int msqid, MessageHeader* msg, size_t msgsz, long msgtype, int flags) {
+    return msgrcv(msqid, msg, msgsz, msgtype, flags);
 }
 
 /**
