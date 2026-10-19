@@ -10,6 +10,7 @@
  */
 int main (int argc, char *argv[]) {
     signal(SIGINT, sigintHandler);
+    signal(SIGCHLD, sigchldHandler);
 
     // Initiate step 1
     SharedMemoryContext shmctx = {-1, NULL};
@@ -32,10 +33,8 @@ int main (int argc, char *argv[]) {
         // Initiate step 2
         if (receiveMessage(msqctx.msqid_req, &message, getMessageSize(&message), 0) == -1) {
             if (termination_flag == 1) break;
-            else {
-                printf("Message could not be received\n");
-                continue;
-            }
+            else if (errno == EINTR) continue;
+            else printf("Message could not be received\n"); continue;
         } else printf("Message received by the server. Mtype: %ld\n", message.mtype);
 
         long mtype = message.mtype;
@@ -47,30 +46,44 @@ int main (int argc, char *argv[]) {
             continue;
         }
 
-        // Initiate step 3
-        unsigned char digest[DIGEST_SLOT];
-        if (digestContent(digest, rawData, (size_t) total)) {
-            printf("Could not digest data\n");
+        // Child processes instantiation
+        fflush(stdout);
+        pid_t pid = fork();
+        if (pid == -1) {
+            printf("Could not create child process\n");
             sendReply(msqctx.msqid_ret, mtype, 0, 0);
             continue;
         }
 
-        // Uncomment to test concurrency and semaphores
-        sleep(5);
+        if (pid == 0) {
+            // Initiate step 3
+            unsigned char digest[DIGEST_SLOT];
+            if (digestContent(digest, rawData, (size_t) total)) {
+                printf("Could not digest data\n");
+                sendReply(msqctx.msqid_ret, mtype, 0, 0);
+                _exit(1);
+            }
 
-        // Initiate step 4
-        int slot_id = writeReturnSharedMemory(shmctx.sharedMemory, digest, 65, semID);
-        if (slot_id == -1) {
-            if (termination_flag == 1) break;
-            printf("Could not write digest\n");
-            sendReply(msqctx.msqid_ret, mtype, 0, 0);
-            continue;
-        }
-        
-        // Initiate step 5
-        if (sendReply(msqctx.msqid_ret, mtype, slot_id, 65) == -1) printf("Message could not be sent\n");
-        else printf("Message sent by the server. Mtype: %ld\n", mtype);
+            // 2. write digest to a result slot
+            int slot_id = writeReturnSharedMemory(shmctx.sharedMemory, digest, 65, semID);
+            if (slot_id == -1) {
+                printf("Could not write digest\n");
+                sendReply(msqctx.msqid_ret, mtype, 0, 0);
+                _exit(1);
+            }
+
+            // Uncomment to test concurrency and semaphores
+            sleep(5);
+
+            // Initiate step 5
+            if (sendReply(msqctx.msqid_ret, mtype, slot_id, 65) == -1) printf("Message could not be sent\n");
+            else printf("Message sent by the server. Mtype: %ld\n", mtype);
+
+            _exit(0);
+        }      
     } while (termination_flag != 1);
+
+    terminateChildren();
     
     terminateSemaphores(&semID);
     terminateMessageQueues(&msqctx);
@@ -191,7 +204,13 @@ ssize_t collectBytes (SharedMemory* sharedMemory, int msqid_req, MessageHeader* 
 
     for (unsigned int got = 0; got < total; got++) {
         // The first chunk is already in current; other chunks are filtered by mtype
-        if (got > 0) if (receiveMessage(msqid_req, &current, getMessageSize(&current), mtype) == -1) return -1;
+        if (got > 0) {
+            ssize_t received;
+            do {
+                received = receiveMessage(msqid_req, &current, getMessageSize(&current), mtype);
+            } while (received == -1 && errno == EINTR && !termination_flag);
+            if (received == -1) return -1;
+        }
 
         // block_index says where the chunk belongs: basically a sequence number
         if (current.block_index >= total) return -1;
@@ -225,3 +244,24 @@ int sendReply (int msqid_ret, long mtype, unsigned int slot_id, size_t size) {
  * @param sigNum Signal number
  */
 void sigintHandler (int sigNum) { termination_flag = 1; }
+
+/**
+ * Signal handler for SIGCHLD, reaps every terminated child process without blocking
+ * @param sigNum Signal number
+ */
+void sigchldHandler (int sigNum) {
+    int saved = errno;
+    while (waitpid(-1, NULL, WNOHANG) > 0);
+    errno = saved;
+}
+
+/**
+ * Called on shutdown, waits for every child process that are still running
+ */
+void terminateChildren () {
+    while (1) {
+        pid_t child = waitpid(-1, NULL, 0);
+        if (child > 0 || (child == -1 && errno == EINTR)) continue;
+        else break;
+    }
+}
