@@ -17,26 +17,18 @@
 # include "JobScheduler.h"
 # include "SemaphoreUtils.h"
 # include "FileHandler.h"
+# include "RequestDataCollector.h"
 
 volatile __sig_atomic_t termination_flag = 0;
-volatile __sig_atomic_t activeChildren = 0;
 int maxChildren = 16;
 
-int initializeSharedMemory (SharedMemoryContext*);
-int initializeMessageQueues (MessageQueueContext*);
-int initializeSemaphores (int*);
-void terminateSharedMemory (SharedMemoryContext*);
-void terminateMessageQueues (MessageQueueContext*);
-void terminateSemaphores (int*);
-
-ssize_t collectBytes (SharedMemory*, int, MessageHeader*, unsigned char*, int);
-int sendReply (int, long, unsigned int, size_t);
-
-void sigintHandler (int);
-void sigchldHandler (int);
-
+/* Basic init/remove operations */
+int initializeSession (SharedMemoryContext*, MessageQueueContext*, int*);
+void terminateSession (SharedMemoryContext*, MessageQueueContext*, int*);
 void terminateChildren ();
 
-void dispatchJob (Job*, SharedMemory*, MessageQueueContext*, int);
+/* Signal handler functions */
+void sigintHandler (int);
+void sigchldHandler (int);
 
 # endif

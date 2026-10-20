@@ -2,6 +2,11 @@
 # define JOBSCHEDULER_H
 
 # include <stdlib.h>
+# include <signal.h>
+
+# include "SharedMemoryUtils.h"
+# include "MessageQueueUtils.h"
+# include "Converter_sha256.h"
 
 # define BACKLOG_SIZE 64
 
@@ -14,8 +19,14 @@ typedef struct Job {
 Job backlog[BACKLOG_SIZE];
 int backlogCount = 0;
 
+volatile __sig_atomic_t activeChildren = 0;
+
 int addJob (int, size_t, char*);
 int findShortestJob ();
 void removeJob (int);
+
+void dispatchJob (Job*, SharedMemory*, MessageQueueContext*, int);
+void initializeSignalSet (sigset_t*, sigset_t*);
+void signalError (MessageQueueContext*, Job*, char*);
 
 # endif

@@ -28,6 +28,9 @@ union semun {
     unsigned short* array;
 };
 
+int initializeSemaphores (int*);
+void terminateSemaphores (int*);
+
 int createSemaphoreSet ();
 int removeSemaphoreSet (int);
 int initializeSemaphoreSet (int);

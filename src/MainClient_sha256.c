@@ -40,13 +40,13 @@ int main (int argc, char *argv[]) {
         
         // Initiate step 3
         message = createRequest(block_id, fileSize, block_index, requiredBlocks);
-        if (sendMessage(msqctx.msqid_req, &message, getMessageSize(&message)) == -1) {
+        if (sendMessage(msqctx.msqid_req, &message) == -1) {
             terminateSession(&shmctx, fileDescriptor, "Message could not be sent");
         } else printf("Message sent by the client. Mtype: %ld\n", message.mtype);
     }
 
     // Initiate step 4
-    if (receiveMessage(msqctx.msqid_ret, &message, getMessageSize(&message), getpid(), 0) == -1) {
+    if (receiveMessage(msqctx.msqid_ret, &message, getpid(), 0) == -1) {
         terminateSession(&shmctx, fileDescriptor, "Message could not be received");
     } else printf("Message received by the client. Mtype: %ld\n", message.mtype);
 
@@ -140,7 +140,7 @@ int connectSemaphores (int* semID) {
 }
 
 /**
- * Gracefully terminates attachment to shared memory
+ * Quietly terminates attachment to shared memory
  * @param context Shared memory context
  */
 void disconnectSharedMemory (SharedMemoryContext* context) {

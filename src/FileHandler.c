@@ -1,13 +1,13 @@
 # include "FileHandler.h"
 
 /**
- * Returns the contents read from a file
- * @param fileName Path to the requested file
- * @param buffer Contains the content that is to be read.
- * @return File size
+ * Reads a .txt file with steps of 4096B; assigns contents to a buffer and calculates file size.
+ * @param fileDescriptor FD of the requested file
+ * @param buffer Will hold the content that will be read.
+ * @param blockCapacity Maximum size the function can read per iteration.
+ * @return File size on success, -1 on failure.
  */
 ssize_t readChunk (int fileDescriptor, unsigned char* buffer, int blockCapacity) {
-    
     size_t fileSize = 0;
     ssize_t bytesRead;
 

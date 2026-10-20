@@ -1,6 +1,36 @@
 # include "SharedMemoryUtils.h"
 
 /**
+ * Initializes the shared memory environment required for IPC and attaches the server to it
+ * @param context Shared memory context
+ * @return 0 on success, -1 on failure
+ */
+int initializeSharedMemory (SharedMemoryContext* context) {
+    context->shmid = createSharedMemory();
+    if (context->shmid == -1) { printf("Shared memory could not be created\n"); return -1; }
+
+    context->sharedMemory = attachToSharedMemory(context->shmid);
+    if (context->sharedMemory == (void*)-1) {
+        printf("Could not attach server to shared memory\n");
+        closeSharedMemory(context->shmid);
+        context->shmid = -1;
+        context->sharedMemory = NULL;
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
+ * Terminates the IPC shared memory environment
+ * @param context Shared memory context
+ */
+void terminateSharedMemory (SharedMemoryContext* context) {
+    if (detachFromSharedMemory(context->sharedMemory) == -1) printf("Could not detach from shared memory\n");
+    if (closeSharedMemory(context->shmid) == -1) printf("Shared memory could not be closed\n");
+}
+
+/**
  * Initializes the shared memory segment required for inter-process communication
  * @return Shared memory ID on success, -1 on failure
  */
@@ -107,7 +137,6 @@ int writeRequestSharedMemory (SharedMemory* sharedMemory, const unsigned char* d
 int writeReturnSharedMemory (SharedMemory* sharedMemory, const unsigned char* data, size_t size, int semID) {
     if (sharedMemory == NULL || data == NULL || size > DIGEST_SLOT) return -1;
     if (semaphoreWait(semID, SEM_RETURN_FREE) == -1) return -1;
-    
     
     for (int i = 0; i < RESULT_SLOTS; i++) {
         if (semaphoreTryWait(semID, SEM_RETURN_BASE+i) == 0) {

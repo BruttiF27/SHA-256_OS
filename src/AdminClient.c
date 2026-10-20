@@ -7,22 +7,21 @@
  * 3. Sends an update message to the server through request queue (mtype forced to 1) à la "best-effort"
  */
 int main (int argc, char* argv[]) {
-    // Initiate step 1 and 2
     if (usageCheck(argc) == -1) exit(1);
+    
     int maxProcessNumber = requestValidation(argv[1]);
     if (maxProcessNumber == -1) exit(1);
 
-    // TODO Initiate step 3
     MessageQueueContext msqctx = {-1, -1};
     if (connectMessageQueue(&msqctx) == -1) exit(1);
 
     MessageHeader message = createAdminRequest(maxProcessNumber);
-    if (sendMessage(msqctx.msqid_req, &message, getMessageSize(&message)) == -1) {
+    if (sendMessage(msqctx.msqid_req, &message) == -1) {
         printf("Message could not be sent\n");
         exit(1);
     }
 
-    printf("Maximum concurrent process value sent to server\n", maxProcessNumber);
+    printf("Maximum concurrent process value sent to server\n");
     exit(0);
 }
 

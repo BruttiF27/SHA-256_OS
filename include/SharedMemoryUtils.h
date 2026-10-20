@@ -36,13 +36,18 @@ typedef struct SharedMemoryContext {
     SharedMemory* sharedMemory;             // Actual shared memory
 } SharedMemoryContext;
 
+/* Basic open/close procedures */
+int initializeSharedMemory (SharedMemoryContext*);
+void terminateSharedMemory (SharedMemoryContext*);
 int createSharedMemory ();
 int closeSharedMemory (int);
-int getSharedMemoryID ();
 
+/* Secondary operations of connection and field fetching */
 SharedMemory* attachToSharedMemory (int);
 int detachFromSharedMemory (SharedMemory*);
+int getSharedMemoryID ();
 
+/* Active operation of R/W inside shared memory sections */
 ssize_t readRequestSharedMemory (SharedMemory*, unsigned int, unsigned char*, size_t, int);
 ssize_t readReturnSharedMemory (SharedMemory*, unsigned int, unsigned char*, size_t, int);
 int writeRequestSharedMemory (SharedMemory*, const unsigned char*, size_t, int);

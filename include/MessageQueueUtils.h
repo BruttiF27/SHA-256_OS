@@ -26,15 +26,24 @@ typedef struct MessageQueueContext {
     int msqid_ret;              // ID related to return message queue
 } MessageQueueContext;
 
+/* Basic open/close operations */
+int initializeMessageQueues (MessageQueueContext*);
+void terminateMessageQueues (MessageQueueContext*);
 int createMessageQueue (int);
 int closeMessageQueue (int);
+
+/* Secondary queue-related operations */
 int getMessageQueueID (int);
 
+/* Basic send/receive operations */
+int sendMessage (int, MessageHeader*);
+ssize_t receiveMessage (int, MessageHeader*, long, int);
+
+/* Message creational functions */
 MessageHeader createRequest (unsigned int, size_t, unsigned int, unsigned int);
 MessageHeader createReply (long, unsigned int, size_t);
 
-int sendMessage (int, MessageHeader*, size_t);
-ssize_t receiveMessage (int, MessageHeader*, size_t, long, int);
+/* Secondary message related operations */
 size_t getMessageSize (MessageHeader*);
 
 # endif

@@ -1,6 +1,31 @@
 # include "SemaphoreUtils.h"
 
 /**
+ * Initializes the semaphores needed for shared memory protection
+ * @param semID Semaphore set ID
+ * @return 0 on success, -1 on failure
+ */
+int initializeSemaphores (int* semID) {
+    *semID = createSemaphoreSet();
+    if (*semID == -1) { printf("Semaphore set could not be created\n"); return -1; }
+
+    if (initializeSemaphoreSet((*semID)) == -1) {
+        printf("Semaphores could not be initialized\n");
+        removeSemaphoreSet((*semID));
+        *semID = -1;
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
+ * Terminates the semaphores
+ * @param semID Semaphore set ID
+ */
+void terminateSemaphores (int* semID) { if (removeSemaphoreSet((*semID)) == -1) printf("Semaphore set could not be removed\n"); }
+
+/**
  * Instantiates the two semaphores to handle concurrent requests and returns
  * @return Semaphore set ID on success, -1 on failure
  */
