@@ -7,17 +7,10 @@ In questo caso parliamo di un'impronta di 256b, quindi 32B rappresentabili visiv
 
 Lo scopo dell'impronta è la visualizzazione sintetica di contenuti informativi in un formato compatto. E' altamente improbabile, ma non impossibile, che due input diversi creino una stessa impronta. Viene normalmente utilizzata per indicizzazione di dati tramite hashing oppure per la verifica di integrità nei checksum.
 
-# Requisiti
-Minimo necessario:
-- OK Implementare server che riceve richieste e invia risposte, usando code di messaggi.
-- OK Implementare client che invia richiesta e riceve risposta, usando code di messaggi.
-- OK Trasferire il file da client a server attraverso memoria condivisa.
-
-Per il voto massimo:
-- OK Istanziare processi distinti per elaborare richieste multiple concorrenti.
-- OK Introdurre un limite al numero di processi in esecuzione, modificabile dinamicamente da un secondo client.
-- OK Schedulare richieste precedenti in ordine di dimensione di file (SJF, deduco?).
-- OK Usare almeno un semaforo per sincronizzare il flusso di comunicazione e/o processamento.
-
-# Roadmap
-- Refactoring per una corretta divisione dei compiti
+# Funzionalità
+- Server capace di ricevere multiple richieste concorrenti e inviare risposte, usando code di messaggi.
+- Client capace di inviare una richiesta e riconoscere la propria risposta, usando code di messaggi.
+- Trasferimento file mediante memoria condivisa.
+- Limite di processi figli del server modificabile con secondo client.
+- Scheduling delle richieste in base a Shortest Job First.
+- Utilizzo di semafori per garantire protezione delle sezioni di memoria condivisa.
